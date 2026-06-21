@@ -1,0 +1,7 @@
+# Step 1 で使うライブラリ。後の Step で feedparser / anthropic / jinja2 / qrcode を追加予定。
+requests>=2.31         # HTTP取得（NCBI E-utilities へのアクセス）
+PyYAML>=6.0            # config.yaml の読み込み
+anthropic>=0.40        # Claude API（AI要約）
+python-dotenv>=1.0     # .env からAPIキーを読み込む
+Jinja2>=3.1            # HTMLテンプレート描画
+feedparser>=6.0        # RSS/Atomフィードの解析（ニュース取得）

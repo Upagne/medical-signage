@@ -1,0 +1,62 @@
+# =============================================================
+# update.yml — 週次でダイジェストを生成し index.html を公開する
+#
+# 流れ:
+#   1. 毎週月曜 09:00 JST に起動（cronはUTC基準なので 00:00 UTC）
+#   2. 文献取得 → ニュース取得 → 要約 → HTML生成
+#   3. 生成した index.html を main にコミット
+#   4. GitHub Pages が main の index.html を公開
+#
+# 手動実行も可能（Actionsタブの "Run workflow" ボタン）。
+# =============================================================
+name: Update signage
+
+on:
+  schedule:
+    # ┌ 分 ┌ 時(UTC) ┌ 日 ┌ 月 ┌ 曜日   → 月曜00:00 UTC = 月曜09:00 JST
+    - cron: "0 0 * * 1"
+  workflow_dispatch: {}   # 画面から手動実行できるようにする
+
+# index.html をコミットするために書き込み権限を付与
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # リポジトリのコードを取得
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Python をセットアップ
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 依存ライブラリをインストール
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 文献 → ニュース → 要約 → HTML を順に生成
+      # APIキーは Secrets から環境変数として渡す（コードには書かない）
+      - name: Build digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}   # 任意。未登録でも動く
+        run: |
+          python src/fetch_pubmed.py
+          python src/fetch_news.py
+          python src/summarize.py
+          python src/build_html.py
+
+      # 生成された index.html をコミット＆プッシュ
+      # 変更が無い週は commit をスキップ（エラーにしない）
+      - name: Commit index.html
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "Update signage $(date -u +'%Y-%m-%d')"
+          git push

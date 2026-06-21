@@ -1,0 +1,111 @@
+# =============================================================
+# config.yaml — 収集・要約・表示の設定（ここを編集して調整する）
+# コードに検索式や件数を直書きしないための設定ファイル。
+# =============================================================
+
+# ---- AI要約（Anthropic Claude API）の設定 ----
+summarize:
+  # 要約に使うモデル。Haikuは軽量・低コストで要約用途に十分。
+  model: "claude-haiku-4-5"
+  # 日本語要約の上限文字数（プロンプトにも反映）。
+  max_chars: 200
+  # 出力トークン上限（200字日本語なら 300 で十分な余裕）。
+  max_tokens: 300
+  # API一時エラー時のリトライ回数（指数バックオフ）。
+  max_retries: 3
+
+# ---- ニュース（総合医学誌RSS）収集の設定 ----
+news:
+  # 各誌から拾う最大件数（合計＝この値×誌数の上限。多すぎたら表示側で調整）
+  per_feed: 2
+  # 自動アクセスをブロックする誌対策。ブラウザらしいUser-Agentを送る。
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  # フィード一覧。★のURLは初回に実アクセスで検証し、ダメなら修正する。
+  feeds:
+    - name: "NEJM"
+      url: "https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss"
+    - name: "The Lancet"
+      url: "https://www.thelancet.com/rssfeed/lancet_online.xml"
+    - name: "The BMJ"
+      url: "https://www.bmj.com/rss/recent.xml"   # current.xml は404のため recent.xml に修正（検証済）
+    - name: "JAMA"
+      url: "https://jamanetwork.com/rss/site_3/67.xml"
+    - name: "Annals of Internal Medicine"
+      url: "https://www.acpjournals.org/action/showFeed?type=etoc&feed=rss&jc=aim"
+
+# ---- サイネージ表示の設定（見た目はここで調整）----
+display:
+  title: "放射線部 医学情報ダイジェスト"   # 画面上部の見出し
+  orientation: "portrait"      # portrait=縦長(4:3モニタ縦置き) / landscape=横長
+  cards_per_page: 2            # 1ページ（1画面）に並べる件数（縦長＋要約全表示なら2が読みやすい）
+  # ページ送り速度は「文字量に応じて自動」。各ページの文字数から表示秒を算出する。
+  #   秒数 = ページ総文字数 ÷ chars_per_second （min_seconds〜max_seconds でクランプ）
+  chars_per_second: 18         # 1秒で読める文字数の目安（斜め読み速度）。小さいほど長く表示
+  min_seconds: 12              # どんなに短くてもこの秒数は表示
+  max_seconds: 30              # どんなに長くてもこの秒数で次へ
+  # 基準フォントは画面の高さに対する割合(vh)で指定。実機の解像度が変わっても自動で拡縮する。
+  # 2.4 ≒ 画面高の2.4%。大きくすると全体的に文字が大きくなる（要実機調整）。
+  base_font_vh: 2.4
+  # カテゴリごとの色帯（一目で分野が分かるように）。config.yamlのカテゴリ名と一致させる。
+  category_colors:
+    "放射線防護・線量管理": "#e6550d"   # オレンジ
+    "IVR・血管造影": "#d6276b"          # マゼンタ
+    "CT": "#3182bd"                     # ブルー
+    "MRI": "#31a354"                    # グリーン
+    "AI・画像再構成": "#756bb1"         # パープル
+    "一般撮影・マンモグラフィ": "#e7298a" # ピンク
+    "核医学・PET": "#1b9e77"            # ティール
+    "ニュース": "#636363"               # グレー（Step4で使用）
+
+# ---- PubMed（NCBI E-utilities）文献収集の設定 ----
+pubmed:
+  # NCBI が「誰からのアクセスか」を識別するためのメール（必須ではないが推奨）。
+  # あなたのアドレスを入れておくと、過剰アクセス時に警告メールが届き安全。
+  tool_name: "medical-signage"
+  email: "yuhei.kawata@gmail.com"
+
+  # 全カテゴリ合計の上限。これを超えたぶんは切り捨てる。
+  total_limit: 20
+
+  # デフォルトの取得期間（日数）。各カテゴリで個別に上書きできる（window_days）。
+  default_window_days: 7
+
+  # カテゴリ定義。
+  #   name        : 表示用ラベル
+  #   count       : このカテゴリで取りたい件数
+  #   window_days : このカテゴリだけの取得期間（省略時は default_window_days）
+  #   query       : esearch に渡す検索式（末尾の期間条件はコード側で自動付加）
+  categories:
+    - name: "放射線防護・線量管理"
+      count: 4
+      query: "radiation dose[tiab] OR radiation protection[tiab] OR dose optimization[tiab] OR diagnostic reference level[tiab]"
+
+    - name: "IVR・血管造影"
+      count: 4
+      query: "interventional radiology[tiab] OR endovascular[tiab] OR angiography[tiab] OR fluoroscopy[tiab] OR embolization[tiab]"
+
+    - name: "CT"
+      count: 3
+      query: "computed tomography[tiab] AND (image quality[tiab] OR radiation dose[tiab] OR reconstruction[tiab] OR protocol[tiab])"
+
+    - name: "MRI"
+      count: 3
+      query: "magnetic resonance imaging[tiab] AND (technique[tiab] OR safety[tiab] OR artifact[tiab] OR sequence[tiab] OR quality[tiab])"
+
+    - name: "AI・画像再構成"
+      count: 2
+      query: "(deep learning[tiab] OR artificial intelligence[tiab] OR machine learning[tiab]) AND (radiology[tiab] OR imaging[tiab] OR reconstruction[tiab])"
+
+    # ニッチ系は7日窓だと0件になりやすいので期間を広めに設定（推論・要調整）
+    - name: "一般撮影・マンモグラフィ"
+      count: 2
+      window_days: 21
+      query: "(radiography[tiab] OR mammography[tiab] OR digital radiography[tiab]) AND (image quality[tiab] OR dose[tiab] OR positioning[tiab])"
+
+    - name: "核医学・PET"
+      count: 2
+      window_days: 21
+      query: "nuclear medicine[tiab] OR PET[tiab] OR SPECT[tiab] OR radiopharmaceutical[tiab]"
+
+  # 1リクエストごとの最小待機秒。APIキー無しは 3req/秒制限のため 0.4 秒で安全側。
+  request_interval_sec: 0.4

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<!--
+  signage.html — サイネージ表示テンプレート（Jinja2）
+  二重波括弧の部分が build_html.py で実データに置き換わる。
+  デザイン方針: 黒背景＋明色文字で高コントラスト、大きめフォント、カテゴリ色帯、自動ページ送り。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>放射線部 医学情報ダイジェスト</title>
+<style>
+  :root {
+    --base-font: 2.4vh;      /* config.yaml の base_font_vh（画面高追従）が入る */
+    --bg: #0f1115;                          /* 背景（ほぼ黒） */
+    --fg: #f5f7fa;                          /* 文字（ほぼ白） */
+    --card-bg: #1b1f27;                     /* カード背景 */
+    --muted: #9aa4b2;                       /* 補助文字（著者・雑誌名） */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: #000; color: var(--fg);
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    overflow: hidden;
+  }
+  /* 画面全体。ステージを中央に置き、余った部分は黒帯（レターボックス）にする。
+     これで実機(縦長)でない端末でも、縦長サイネージ全体が欠けずに見える。 */
+  body { display: flex; justify-content: center; align-items: center; }
+
+  /* ステージ＝実機モニタの表示領域。アスペクト比をテンプレ変数で固定する。
+     縦長(portrait)なら 3:4、横長(landscape)なら 4:3。画面に収まるよう縮小。 */
+  .stage {
+    aspect-ratio: 3 / 4;
+    height: 100vh; max-width: 100vw;
+    background: var(--bg); overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    font-size: var(--base-font);
+  }
+
+  /* 画面上部のヘッダー */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.6em 1em; border-bottom: 3px solid #2a2f3a; flex: 0 0 auto;
+  }
+  header h1 { font-size: 1.4em; }
+  header .updated { font-size: 0.6em; color: var(--muted); }
+
+  /* ページ（1画面分）。JSで1枚ずつ表示を切り替える */
+  .page { display: none; padding: 1em; flex: 1 1 auto; min-height: 0; }
+  .page.active { display: block; }
+  /* グリッド列数はテンプレ変数で切替（縦長=1列, 横長=2列） */
+  .grid {
+    display: grid; grid-template-columns: 1fr;
+    gap: 0.8em; height: 100%;
+  }
+
+  /* 各記事カード */
+  .card {
+    background: var(--card-bg); border-radius: 12px;
+    border-left: 12px solid var(--accent, #636363);  /* 左の色帯＝カテゴリ色 */
+    padding: 0.8em 1em; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .card .badges { margin-bottom: 0.4em; }
+  .badge {
+    display: inline-block; font-size: 0.55em; font-weight: bold;
+    padding: 0.2em 0.7em; border-radius: 999px; color: #fff;
+    background: var(--accent, #636363);
+  }
+  .badge.kind { background: #444b58; margin-left: 0.4em; }
+  /* タイトルは最長3行で打ち切り（…）。長い英語タイトルがカードを食い尽くすのを防ぐ */
+  .card h2 {
+    font-size: 0.85em; line-height: 1.3; margin-bottom: 0.4em;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* 要約は残り領域を使い、はみ出す分だけ隠す（200字なら通常収まる） */
+  .card .summary { font-size: 0.78em; line-height: 1.55; flex: 1 1 auto; overflow: hidden; }
+  .card .meta {
+    font-size: 0.5em; color: var(--muted); margin-top: 0.5em;
+    border-top: 1px solid #2a2f3a; padding-top: 0.4em;
+  }
+  .card .meta a { color: #6ea8fe; text-decoration: none; word-break: break-all; }
+
+  /* ページ番号インジケータ（ステージ内の右下に固定） */
+  footer {
+    position: absolute; bottom: 0.5em; right: 1em;
+    font-size: 0.55em; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+ <div class="stage">
+  <header>
+    <h1>放射線部 医学情報ダイジェスト</h1>
+    <div class="updated">更新: 2026-06-21 21:38</div>
+  </header>
+
+  
+  <section class="page active">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #e6550d">
+        <div class="badges">
+          <span class="badge">放射線防護・線量管理</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Dual-energy CT pulmonary angiography using dual-flow mixture bolus tracking: potential for contrast medium and radiation exposure reduction.</h2>
+        <div class="summary">肺塞栓症疑いの患者において、デュアルエネルギーCTPAで dual-flow mixture bolus tracking法を用いた場合、40 keV仮想単色画像により肺動脈の可視化が向上し、実効線量を1.61 mSvに低減（従来法3.62 mSv）しながら、造影剤体積削減と診断性能維持を達成。SVC artifact低減、PE検出感度同等。</div>
+        <div class="meta">
+          Jian M, Huang L, Zhang C, et al. — Insights into imaging 2026
+          <br><a href="https://doi.org/10.1186/s13244-026-02329-x">https://doi.org/10.1186/s13244-026-02329-x</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #e6550d">
+        <div class="badges">
+          <span class="badge">放射線防護・線量管理</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Radiation dose and signal-to-noise ratio in pediatric head CT: a phantom study comparing photon-counting and energy-integrating detectors.</h2>
+        <div class="summary">小児頭部CT検査において、光子計数CT（PCCT）は従来型エネルギー統合検出器CT（EID-CT）と比べて全年齢ファントムで低いCTDIvolを実現。臨床的に関連性の高いIQL範囲（200-300）では10歳ファントムで最大9%の線量削減を達成。一方、脳実質と骨でSNRはPCCTが有意に高く（p&lt;0.03、p=0.012）、全IQL範囲で脳実質は約20%、骨は約50%高いSNRを示した。</div>
+        <div class="meta">
+          Klüner LV, Zensen S, Peuster H, et al. — Neuroradiology 2026
+          <br><a href="https://doi.org/10.1007/s00234-026-04075-9">https://doi.org/10.1007/s00234-026-04075-9</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #e6550d">
+        <div class="badges">
+          <span class="badge">放射線防護・線量管理</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Added value of photon-counting CT for triple rule-out imaging: A propensity-matched comparison with energy-integrating CT.</h2>
+        <div class="summary">フォトンカウンティングCT（PCD-CT）は従来型エネルギー積分CT（EID-CT）と比べ、三重除外検査（TRO）において線量を32.3%低減しながら、大動脈・冠動脈・肺動脈の造影信号雑音比（CNR）を有意に向上させた。冠動脈狭窄診断精度に差がない一方（AUC 0.936 vs 0.961）、肺動脈領域の診断信頼度が顕著に改善（fair vs excellent）。</div>
+        <div class="meta">
+          Hyska S, Vecsey-Nagy M, Emrich T, et al. — Journal of cardiovascular computed tomography 2026
+          <br><a href="https://doi.org/10.1016/j.jcct.2026.06.006">https://doi.org/10.1016/j.jcct.2026.06.006</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #e6550d">
+        <div class="badges">
+          <span class="badge">放射線防護・線量管理</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Retrospective assessment of low-dose and low-contrast agent protocols for photon-counting CT angiography of the aorta.</h2>
+        <div class="summary">フォトンカウンティングCT（PCD-CT）による大動脈造影において、低用量（LD）および低造影剤（LC）プロトコルを評価。57患者で、LDプロトコルは従来型EID-CTと比べ放射線量を約40%削減（3.3対5.3 mGy）しつつCNRで優位性を示した。LC単独およびLD/LC併用プロトコルでもEID-CTと同等のCNR・画像品質を維持。</div>
+        <div class="meta">
+          Hennes JL, Krompaß K, Huflage H, et al. — The international journal of cardiovascular imaging 2026
+          <br><a href="https://doi.org/10.1007/s10554-026-03757-y">https://doi.org/10.1007/s10554-026-03757-y</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #d6276b">
+        <div class="badges">
+          <span class="badge">IVR・血管造影</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Subcutaneous Versus Transvenous Implantable Cardioverter-Defibrillators in End-Stage Renal Disease: A Real-World Study.</h2>
+        <div class="summary">末期腎臓病患者における皮下型と経静脈型除細動器の比較。皮下型ICDは経静脈型と同等の感染症合併症率・入院率・全原因死亡率（いずれもp&gt;0.05）を示したが、透析アクセス修復の頻度が有意に高かった（39.1%対25.8%、p=0.001）。デバイス選択は患者の解剖学的特性とアクセス計画に基づき個別化が必要。</div>
+        <div class="meta">
+          Lama S, Saeed Y, Shahrori Z, et al. — Pacing and clinical electrophysiology : PACE 2026
+          <br><a href="https://doi.org/10.1111/pace.70330">https://doi.org/10.1111/pace.70330</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #d6276b">
+        <div class="badges">
+          <span class="badge">IVR・血管造影</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Indications for Dual Antiplatelet Therapy in Coil-Only Treatment of Ruptured Intracranial Aneurysms: A Narrative Review.</h2>
+        <div class="summary">破裂脳動脈瘤のコイル塞栓術における抗血小板療法の有効性は、脳塞栓症合併症の軽減の可能性が示唆されるものの、遅発性脳虚血や機能予後への一貫した効果は限定的。デバイス補助治療のエビデンスをコイル単独治療に直接適用は不適切で、現在のところ標準的な抗血小板療法レジメン推奨なし。エビデンスは後ろ向き研究や単一施設設計の制約あり。ASTOP試験などの無作為化試験が手技別の治療戦略確立に必要。</div>
+        <div class="meta">
+          Sowa M, Sowa J — Medical science monitor : international medical journal of experimental and clinical research 2026
+          <br><a href="https://doi.org/10.12659/MSM.952805">https://doi.org/10.12659/MSM.952805</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #d6276b">
+        <div class="badges">
+          <span class="badge">IVR・血管造影</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Combined oral contraceptive use as a cause of acute myocardial infarction in a young woman without traditional risk factors: a case report.</h2>
+        <div class="summary">伝統的な心血管危険因子を持たない28歳女性が、13年間使用していた150µgレボノルゲストレル/30µgエチニルエストラジオール含有経口避妊薬により急性心筋梗塞を発症。左前下行枝の血栓性閉塞を認め、風船血管形成術で再灌流を達成。本例は危険因子非保有者でもホルモン避妊薬による心筋梗塞の可能性を示唆し、若年女性の急性冠症候群診断時にホルモン避妊歴の確認の重要性を強調。</div>
+        <div class="meta">
+          Hosseini SK, Mohammadi H, Mohammadi SA — Journal of medical case reports 2026
+          <br><a href="https://doi.org/10.1186/s13256-026-06192-8">https://doi.org/10.1186/s13256-026-06192-8</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #d6276b">
+        <div class="badges">
+          <span class="badge">IVR・血管造影</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Ballistic fragment embolism to superior mesenteric artery after the shrapnel injury to the chest: a case report of casualty from Russia-Ukraine war.</h2>
+        <div class="summary">ロシア・ウクライナ戦争における胸部銃創患者で、弾片が心臓を貫通して上腸間膜動脈(SMA)へ塞栓移行した稀な症例。全身CT検査により経心臓的な弾片移行を診断。腸壊死所見がなく同意遅延のため14日目に開腹し、動脈切開で弾片摘出・一次修復施行、患者は軽快。銃創患者では胸部・胸腹部外傷に動脈性弾片塞栓を疑うべき。造影MSCT検査が診断と可視化に重要。</div>
+        <div class="meta">
+          Lurin I, Khoroshun E, Panasenko S, et al. — Journal of cardiothoracic surgery 2026
+          <br><a href="https://doi.org/10.1186/s13019-026-04443-9">https://doi.org/10.1186/s13019-026-04443-9</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #3182bd">
+        <div class="badges">
+          <span class="badge">CT</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Left upper lobectomy for lung cancer with a subaortic anomalous left brachiocephalic vein: a case report.</h2>
+        <div class="summary">左肺尖部肺癌で大動脈下走行異常左腕頭静脈を認めた症例の左上葉切除。術前CT3D再構成により異常静脈の位置（Takadaパターンb/c）を同定し、迷走神経と反回神経を早期確認して慎重に肺動脈を処理することで、大動脈肺動脈窓での安全な郭清と血管・神経損傷の回避が可能。異常走行静脈の術前画像診断が左上葉縦隔手術の安全性向上に重要。</div>
+        <div class="meta">
+          Sakata R, Yoshida Y, Yotsukura M, et al. — General thoracic and cardiovascular surgery cases 2026
+          <br><a href="https://doi.org/10.1186/s44215-026-00266-1">https://doi.org/10.1186/s44215-026-00266-1</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #3182bd">
+        <div class="badges">
+          <span class="badge">CT</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>The modified balloon-anchored technique for iliac branch device deployment via ipsilateral femoral access.</h2>
+        <div class="summary">短い総腸骨動脈や不利な大動脈分岐部を有する患者にとって、標準的な対側大腿動脈アプローチが困難な場合、修正されたバルーンアンカー法による同側大腿動脈からの腸骨枝デバイス（IBD）展開が代替戦略として有用。23例（中央値75歳）の後方視的検討で、技術的成功率は100%、1年のIBD本体とブリッジングステント開存率はそれぞれ100%と95.7%。</div>
+        <div class="meta">
+          Xu C, Xu GX, Gu XF, et al. — BMC cardiovascular disorders 2026
+          <br><a href="https://doi.org/10.1186/s12872-026-06134-8">https://doi.org/10.1186/s12872-026-06134-8</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #3182bd">
+        <div class="badges">
+          <span class="badge">CT</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Multifactorial strategies for the prevention of the risks of ulceration in patients affected by diabetic foot: a no-profit, multicentre, clinical trial protocol.</h2>
+        <div class="summary">糖尿病性足病変の潰瘍化リスク予防を目的とした多施設共同臨床試験プロトコル。2型糖尿病患者のうち、潰瘍既往なし・中等度リスク群（IWGDF grade 2）と既往あり・寛解6ヶ月以上群（grade 3）を対象に、臨床・代謝評価と生化学マーカー測定、立位荷重CT下での三次元足骨格構造解析、ステレオ撮影による足キネマティクス、足底圧測定などの多施設協調的な最新計測を実施。</div>
+        <div class="meta">
+          Leardini A, Pagotto U, Dalla Paola L, et al. — BMJ open 2026
+          <br><a href="https://doi.org/10.1136/bmjopen-2025-112163">https://doi.org/10.1136/bmjopen-2025-112163</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #31a354">
+        <div class="badges">
+          <span class="badge">MRI</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Validation of MRI-based nnU-Net model for automated segmentation of neck lymph nodes in head and neck squamous cell carcinoma: a multicenter study.</h2>
+        <div class="summary">MRI-CE-T1w画像を用いたnnU-Netによる頭頸部扁平上皮癌のリンパ節自動セグメンテーション法を開発・多施設検証。境界追従型アノテーション戦略でDice係数0.795、体積一致性0.939を達成。手動輪郭描画時間を33%短縮（149.89秒→100.22秒）。単一シーケンスモデルで複数施設での汎用性確認。標準化された体積評価と臨床ワークフロー効率化を実現。</div>
+        <div class="meta">
+          Sui C, Qu X, Xu N, et al. — Neuroradiology 2026
+          <br><a href="https://doi.org/10.1007/s00234-026-04070-0">https://doi.org/10.1007/s00234-026-04070-0</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #31a354">
+        <div class="badges">
+          <span class="badge">MRI</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Prostate MRI Practices and PI-RADS Use in China&#39;s Mainland: A Nationwide Assessment and Opportunities for Standardization.</h2>
+        <div class="summary">中国本土の前立腺MRI検査では技術的・報告形式的な標準化が不十分。全国調査（2023年）で3,919施設を対象に実施した結果、1.5T装置が主流（61.2%）で、高b値DWIは58.7%、PI-RADS報告は55.3%の施設のみが採用。高検査量施設ほど3.0T装置・多パラメトリックMRI・PI-RADS報告を採用。施設レベル・経済区分・スキャナ機種が採用に関連（P&lt;0.05）。</div>
+        <div class="meta">
+          Sun H, Xu L, Zhang G, et al. — Journal of the American College of Radiology : JACR 2026
+          <br><a href="https://doi.org/10.1016/j.jacr.2026.06.010">https://doi.org/10.1016/j.jacr.2026.06.010</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #31a354">
+        <div class="badges">
+          <span class="badge">MRI</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Sepsis Recognition and Management Gaps in Hospitals: A Post Hoc Analysis of a Subset of Data from the European Sepsis Care Survey.</h2>
+        <div class="summary">ポーランドの55病院を対象とした調査。Sepsis-3基準は44%の病院でのみ採用。ED・一般病棟でのスクリーニングと標準化管理の実施率は各々27%・38.2%、21%・30.8%と低く、ICUのみ62%・86.7%。品質改善プログラム(QIP)導入病院では敗血症症例監視率76.5%、死亡率監視70.6%、抗菌薬投与時間0%→29.4%など主要指標の監視頻度が有意に高かった。</div>
+        <div class="meta">
+          Śmiechowicz J, Scheer CS, Bartczak J, et al. — Infectious diseases and therapy 2026
+          <br><a href="https://doi.org/10.1007/s40121-026-01387-4">https://doi.org/10.1007/s40121-026-01387-4</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #756bb1">
+        <div class="badges">
+          <span class="badge">AI・画像再構成</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Astrobiology in the Time of Artificial Intelligence.</h2>
+        <div class="summary">Viking以降のコンピュータ技術の急速な進化、特に機械学習が宇宙探査と地球外生命探索に革新をもたらしている。機械学習により、異なるスケールのデータ統合、複雑なデータ特徴への感度向上、環境サンプリング戦略の適応化が実現され、火星など天体での生命探索の精度と効率が格段に向上する見通し。</div>
+        <div class="meta">
+          Scharf C — Astrobiology 2026
+          <br><a href="https://doi.org/10.1177/15311074261463025">https://doi.org/10.1177/15311074261463025</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #756bb1">
+        <div class="badges">
+          <span class="badge">AI・画像再構成</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Preoperative prediction of thymoma risk classification with machine learning-based computed tomography radiomics features.</h2>
+        <div class="summary">非造影CT放射線学的特徴と機械学習を用いて胸腺腫の低リスク（A/AB/B1型）と高リスク（B2/B3型）を術前に判別するモデルを開発。436例を訓練/検証セット(306/130例)で検討し、臨床因子2項目と放射線学的特徴11項目を統合したノモグラムを構築。検証セットでAUC 0.735、精度70.8%、感度58.8%、特異度78.5%を達成。胸腺腫の個別化治療計画立案に有用。</div>
+        <div class="meta">
+          Zhao K, Liu Y, Xu H, et al. — World journal of surgical oncology 2026
+          <br><a href="https://doi.org/10.1186/s12957-026-04463-8">https://doi.org/10.1186/s12957-026-04463-8</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #e7298a">
+        <div class="badges">
+          <span class="badge">一般撮影・マンモグラフィ</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Definitions and Diagnostic Criteria of Lumbar Spine Instability: A Systematic Review.</h2>
+        <div class="summary">腰椎不安定性は複数の診断領域（臨床所見・画像・自記式質問票）が存在し、単一の検査では十分でない。&gt;3mm前後後方移動や症状誘発動作、LSIQ質問票などの所見を組み合わせた多因子評価が推奨される。臨床的一貫性と診断精度向上には、3領域中少なくとも2つを含む標準化フレームワークの構築が必要。</div>
+        <div class="meta">
+          Gonugunta N, Kennemer A, Shah A, et al. — The spine journal : official journal of the North American Spine Society 2026
+          <br><a href="https://doi.org/10.1016/j.spinee.2026.06.002">https://doi.org/10.1016/j.spinee.2026.06.002</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #e7298a">
+        <div class="badges">
+          <span class="badge">一般撮影・マンモグラフィ</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Comparison between X-ray and point-of-care ultrasound in localization of umbilical venous catheters in neonates.</h2>
+        <div class="summary">臍静脈カテーテルの位置確認について、超音波ガイド下法と従来のX線撮影を比較した前向きコホート研究。超音波ガイド群（150例）では標準位置（T7-T9）達成率97.9％に対し非ガイド群（120例）は70.4％。超音波ガイド下では穿刺から縫合までの時間5.87分、X線確認14.14分で、非ガイド群の6.90分、16.90分より有意に短縮。操作回数と必要撮影数削減。</div>
+        <div class="meta">
+          El-Sakka AS, William YH, Mohammad SA, et al. — Journal of neonatal-perinatal medicine 2026
+          <br><a href="https://doi.org/10.1177/19345798261459396">https://doi.org/10.1177/19345798261459396</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #1b9e77">
+        <div class="badges">
+          <span class="badge">核医学・PET</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Giant Retroperitoneal Liposarcoma Without Organ Invasion: A Rare Case Report.</h2>
+        <div class="summary">巨大後腹膜脂肪肉腫（28×23.6×24 cm、10 kg）の61歳女性例。MRIで脱分化型を疑ったが、生検で高分化型脂肪肉腫と診断。正中開腹による完全切除で隣接臓器を温存し、R0かつV0達成。3ヵ月follow-upで再発・転移なし。本症例は明確な解剖学的境界を有する巨大後腹膜脂肪肉腫では、多臓器合併切除を回避した臓器温存的完全切除が可能であることを示唆。</div>
+        <div class="meta">
+          Hajdari LB, Mucaj SK, Morina BR, et al. — The American journal of case reports 2026
+          <br><a href="https://doi.org/10.12659/AJCR.952808">https://doi.org/10.12659/AJCR.952808</a>
+          
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #1b9e77">
+        <div class="badges">
+          <span class="badge">核医学・PET</span>
+          <span class="badge kind">文献</span>
+        </div>
+        <h2>Myasthenia Gravis and Thymoma.</h2>
+        <div class="summary">胸腺腫は前縦隔の最頻腫瘍。患者の20～30%が重症筋無力症（MG）を発症し、さらに3分の1は抗アセチルコリン受容体（AChR）抗体陽性。胸腺腫関連MG（TAMG）は全MGの15～20%を占め、ほぼすべてAChR抗体陽性で、単独MGより全身型で治療抵抗性が強い。評価はcontrast造影CTが第一選択。外科的切除は全患者で推奨（全胸腺腫は悪性）。</div>
+        <div class="meta">
+          Claytor B, Delasos L, Raymond DP, et al. — Muscle &amp; nerve 2026
+          <br><a href="https://doi.org/10.1002/mus.70318">https://doi.org/10.1002/mus.70318</a>
+          
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Cefazolin for Methicillin-Susceptible Staphylococcus aureus Bacteremia</h2>
+        <div class="summary">メチシリン感受性黄色ブドウ球菌菌血症に対するセファゾリン</div>
+        <div class="meta">
+          NEJM 
+          <br><a href="https://www.nejm.org/doi/full/10.1056/NEJMoa2506905?af=R&amp;rss=currentIssue">https://www.nejm.org/doi/full/10.1056/NEJMoa2506905?af=R&amp;rss=currentIssue</a>
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Prehospital Resuscitation with Type O Whole Blood for Trauma and Hemorrhage</h2>
+        <div class="summary">外傷および出血に対する病院前救急蘇生におけるO型全血</div>
+        <div class="meta">
+          NEJM 
+          <br><a href="https://www.nejm.org/doi/full/10.1056/NEJMoa2602167?af=R&amp;rss=currentIssue">https://www.nejm.org/doi/full/10.1056/NEJMoa2602167?af=R&amp;rss=currentIssue</a>
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>[Comment] Pakistan and Afghanistan: a call for health diplomacy and restraint</h2>
+        <div class="summary">アフガニスタンとパキスタン国境地域の紛争により約5000万人の民間人が保健・栄養上の深刻な課題に直面。半世紀近い継続的な紛争と人道危機において、直接的な暴力だけでなく初期医療・栄養システムの脆弱性と社会経済的発展の不足が過剰死亡を招いている。保健外交と自制による解決が急務。</div>
+        <div class="meta">
+          The Lancet 
+          <br><a href="https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(26)01189-X/fulltext?rss=yes">https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(26)01189-X/fulltext?rss=yes</a>
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>[Correspondence] When health-care workers become the target in Lebanon</h2>
+        <div class="summary">レバノンにおける医療従事者への攻撃。国際人道法は医療従事者と医療施設を区別原則・比例性・予防措置・医療中立性により保護。しかし武力紛争における医療攻撃が多発し、緊急対応の阻害、医療アクセス遮断、脆弱な保健システムの機能低下を招く。WHO定義では医療攻撃は暴力行為や脅迫、緊急時の医療サービス利用可能性・アクセス・提供を妨害する行為。</div>
+        <div class="meta">
+          The Lancet 
+          <br><a href="https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(26)01103-7/fulltext?rss=yes">https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(26)01103-7/fulltext?rss=yes</a>
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Ebola: Outbreak cases are &amp;#x201c;tip of iceberg,&amp;#x201d; says Africa CDC official at centre of epidemic</h2>
+        <div class="summary">コンゴ民主共和国北キブ州ベニでのエボラ出血熱流行は、既報の発症例は「氷山の一角」であり、武装勢力による暴力で地域住民の信頼構築が極めて困難な状況。Africa CDCの対応責任者は、治療施設へのアクセス制限と地域社会との信頼醸成が、正確な患者数把握と感染制御の最大課題と指摘。</div>
+        <div class="meta">
+          The BMJ 
+          <br><a href="http://www.bmj.com/content/393/bmj-2026-726541.short?rss=1">http://www.bmj.com/content/393/bmj-2026-726541.short?rss=1</a>
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Wegovy weight loss pill gets UK approval</h2>
+        <div class="summary">英国医薬品規制当局（MHRA）がセマグルチド（Wegovy）の経口錠剤版を肥満治療薬として承認。ノボ ノルディスク製のこの製剤はGLP-1受容体作動薬の経口剤としては初の承認で、従来の注射剤より低コストで患者負担が少ない。NHS利用には国立医療技術評価機構（NICE）の評価が別途必要。</div>
+        <div class="meta">
+          The BMJ 
+          <br><a href="http://www.bmj.com/content/393/bmj-2026-059332.short?rss=1">http://www.bmj.com/content/393/bmj-2026-059332.short?rss=1</a>
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Audio Highlights May 22, 2026</h2>
+        <div class="summary">JAMA編集後記：2026年5月22日号</div>
+        <div class="meta">
+          JAMA 
+          <br><a href="https://jamanetwork.com/journals/jama/fullarticle/2849627">https://jamanetwork.com/journals/jama/fullarticle/2849627</a>
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>FDA Approves New Medication for Agitation Associated With Dementia</h2>
+        <div class="summary">アルツハイマー病による認知症に伴う易刺激性に対する新規医薬品をFDAが承認</div>
+        <div class="meta">
+          JAMA 
+          <br><a href="https://jamanetwork.com/journals/jama/fullarticle/2849527">https://jamanetwork.com/journals/jama/fullarticle/2849527</a>
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+  <section class="page ">
+    <div class="grid">
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Rapid Evaluation of Artificial Intelligence Technology Used for Ambient Dictation in Primary Care: Comparing the Quality of Documentation of Artificial Intelligence–Generated and Human-Produced Clinical Notes</h2>
+        <div class="summary">初期医療における環境音声入力のための人工知能技術の迅速評価：人工知能生成臨床記録と人間作成臨床記録の質の比較</div>
+        <div class="meta">
+          Annals of Internal Medicine 
+          <br><a href="https://www.acpjournals.org/doi/abs/10.7326/ANNALS-25-02772?af=R">https://www.acpjournals.org/doi/abs/10.7326/ANNALS-25-02772?af=R</a>
+        </div>
+      </article>
+      
+      <article class="card" style="--accent: #636363">
+        <div class="badges">
+          <span class="badge">ニュース</span>
+          <span class="badge kind">ニュース</span>
+        </div>
+        <h2>Effectiveness of Nonpharmacologic Treatments for Chronic Low Back Pain</h2>
+        <div class="summary">慢性腰痛に対する非薬物療法の有効性</div>
+        <div class="meta">
+          Annals of Internal Medicine 
+          <br><a href="https://www.acpjournals.org/doi/abs/10.7326/ANNALS-25-04645?af=R">https://www.acpjournals.org/doi/abs/10.7326/ANNALS-25-04645?af=R</a>
+        </div>
+      </article>
+      
+    </div>
+  </section>
+  
+
+  <footer><span id="pageno">1</span> / 15</footer>
+ </div><!-- /.stage -->
+
+<script>
+  // ---- 自動ページ送り（文字量に応じた可変速度）----
+  // 各ページの表示秒は文字数から算出済み。ページごとに待ち時間を変えて次へ送る。
+  const pages = document.querySelectorAll('.page');
+  const pageno = document.getElementById('pageno');
+  const durations = [30, 30, 30, 30, 30, 30, 30, 28, 29, 26, 12, 25, 24, 12, 19];  // 例: [18, 25, 12, ...]（秒）
+  let current = 0;
+  function nextPage() {
+    pages[current].classList.remove('active');
+    current = (current + 1) % pages.length;
+    pages[current].classList.add('active');
+    pageno.textContent = current + 1;
+    // 次のページの文字量に合わせた秒数で再スケジュール
+    setTimeout(nextPage, durations[current] * 1000);
+  }
+  if (pages.length > 1) {
+    // 最初のページも、その文字量に応じた秒数だけ表示してから送る
+    setTimeout(nextPage, durations[0] * 1000);
+  }
+</script>
+</body>
+</html>

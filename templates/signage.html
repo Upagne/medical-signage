@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<!--
+  signage.html — サイネージ表示テンプレート（Jinja2）
+  二重波括弧の部分が build_html.py で実データに置き換わる。
+  デザイン方針: 黒背景＋明色文字で高コントラスト、大きめフォント、カテゴリ色帯、自動ページ送り。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<style>
+  :root {
+    --base-font: {{ base_font_css }};      /* config.yaml の base_font_vh（画面高追従）が入る */
+    --bg: #0f1115;                          /* 背景（ほぼ黒） */
+    --fg: #f5f7fa;                          /* 文字（ほぼ白） */
+    --card-bg: #1b1f27;                     /* カード背景 */
+    --muted: #9aa4b2;                       /* 補助文字（著者・雑誌名） */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: #000; color: var(--fg);
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    overflow: hidden;
+  }
+  /* 画面全体。ステージを中央に置き、余った部分は黒帯（レターボックス）にする。
+     これで実機(縦長)でない端末でも、縦長サイネージ全体が欠けずに見える。 */
+  body { display: flex; justify-content: center; align-items: center; }
+
+  /* ステージ＝実機モニタの表示領域。アスペクト比をテンプレ変数で固定する。
+     縦長(portrait)なら 3:4、横長(landscape)なら 4:3。画面に収まるよう縮小。 */
+  .stage {
+    aspect-ratio: {{ aspect_ratio }};
+    height: 100vh; max-width: 100vw;
+    background: var(--bg); overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    font-size: var(--base-font);
+  }
+
+  /* 画面上部のヘッダー */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.6em 1em; border-bottom: 3px solid #2a2f3a; flex: 0 0 auto;
+  }
+  header h1 { font-size: 1.4em; }
+  header .updated { font-size: 0.6em; color: var(--muted); }
+
+  /* ページ（1画面分）。JSで1枚ずつ表示を切り替える */
+  .page { display: none; padding: 1em; flex: 1 1 auto; min-height: 0; }
+  .page.active { display: block; }
+  /* グリッド列数はテンプレ変数で切替（縦長=1列, 横長=2列） */
+  .grid {
+    display: grid; grid-template-columns: {{ grid_columns }};
+    gap: 0.8em; height: 100%;
+  }
+
+  /* 各記事カード */
+  .card {
+    background: var(--card-bg); border-radius: 12px;
+    border-left: 12px solid var(--accent, #636363);  /* 左の色帯＝カテゴリ色 */
+    padding: 0.8em 1em; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .card .badges { margin-bottom: 0.4em; }
+  .badge {
+    display: inline-block; font-size: 0.55em; font-weight: bold;
+    padding: 0.2em 0.7em; border-radius: 999px; color: #fff;
+    background: var(--accent, #636363);
+  }
+  .badge.kind { background: #444b58; margin-left: 0.4em; }
+  /* タイトルは最長3行で打ち切り（…）。長い英語タイトルがカードを食い尽くすのを防ぐ */
+  .card h2 {
+    font-size: 0.85em; line-height: 1.3; margin-bottom: 0.4em;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* 要約は残り領域を使い、はみ出す分だけ隠す（200字なら通常収まる） */
+  .card .summary { font-size: 0.78em; line-height: 1.55; flex: 1 1 auto; overflow: hidden; }
+  .card .meta {
+    font-size: 0.5em; color: var(--muted); margin-top: 0.5em;
+    border-top: 1px solid #2a2f3a; padding-top: 0.4em;
+  }
+  .card .meta a { color: #6ea8fe; text-decoration: none; word-break: break-all; }
+
+  /* ページ番号インジケータ（ステージ内の右下に固定） */
+  footer {
+    position: absolute; bottom: 0.5em; right: 1em;
+    font-size: 0.55em; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+ <div class="stage">
+  <header>
+    <h1>{{ title }}</h1>
+    <div class="updated">更新: {{ updated_at }}</div>
+  </header>
+
+  {% for page in pages %}
+  <section class="page {% if loop.first %}active{% endif %}">
+    <div class="grid">
+      {% for a in page %}
+      <article class="card" style="--accent: {{ a.color }}">
+        <div class="badges">
+          <span class="badge">{{ a.category }}</span>
+          <span class="badge kind">{{ a.kind }}</span>
+        </div>
+        <h2>{{ a.title }}</h2>
+        <div class="summary">{{ a.summary }}</div>
+        <div class="meta">
+          {% if a.authors %}{{ a.authors }} — {% endif %}{{ a.journal }} {{ a.year }}
+          {% if a.doi %}<br><a href="https://doi.org/{{ a.doi }}">https://doi.org/{{ a.doi }}</a>
+          {% elif a.url %}<br><a href="{{ a.url }}">{{ a.url }}</a>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <footer><span id="pageno">1</span> / {{ pages|length }}</footer>
+ </div><!-- /.stage -->
+
+<script>
+  // ---- 自動ページ送り（文字量に応じた可変速度）----
+  // 各ページの表示秒は文字数から算出済み。ページごとに待ち時間を変えて次へ送る。
+  const pages = document.querySelectorAll('.page');
+  const pageno = document.getElementById('pageno');
+  const durations = {{ page_seconds }};  // 例: [18, 25, 12, ...]（秒）
+  let current = 0;
+  function nextPage() {
+    pages[current].classList.remove('active');
+    current = (current + 1) % pages.length;
+    pages[current].classList.add('active');
+    pageno.textContent = current + 1;
+    // 次のページの文字量に合わせた秒数で再スケジュール
+    setTimeout(nextPage, durations[current] * 1000);
+  }
+  if (pages.length > 1) {
+    // 最初のページも、その文字量に応じた秒数だけ表示してから送る
+    setTimeout(nextPage, durations[0] * 1000);
+  }
+</script>
+</body>
+</html>
