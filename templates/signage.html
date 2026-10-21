@@ -122,6 +122,10 @@
  </div><!-- /.stage -->
 
 <script>
+  // ---- 自動リロード ----
+  // 週次更新(月曜9時JST)を常時表示でも拾うため、一定間隔でページを再読込する。
+  setTimeout(function () { location.reload(); }, {{ reload_minutes }} * 60 * 1000);
+
   // ---- 自動ページ送り（文字量に応じた可変速度）----
   // 各ページの表示秒は文字数から算出済み。ページごとに待ち時間を変えて次へ送る。
   const pages = document.querySelectorAll('.page');
