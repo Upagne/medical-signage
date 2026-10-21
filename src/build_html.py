@@ -91,12 +91,15 @@ def build():
         sec = max(min_s, min(max_s, round(sec)))  # クランプ
         page_seconds.append(sec)
 
-    # 更新日時（JSON生成時刻があれば使い、無ければ現在時刻）
+    # 更新日時は必ず日本時間(JST)で表示する。
+    # GitHub ActionsはUTCで動くため、変換しないとUTC時刻が出てしまう。
+    JST = datetime.timezone(datetime.timedelta(hours=9))
     gen = data.get("generated_at")
     if gen:
-        updated_at = datetime.datetime.fromisoformat(gen).strftime("%Y-%m-%d %H:%M")
+        dt = datetime.datetime.fromisoformat(gen)  # tz情報付きでパース
     else:
-        updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        dt = datetime.datetime.now(JST)
+    updated_at = dt.astimezone(JST).strftime("%Y-%m-%d %H:%M") + " (JST)"
 
     env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
@@ -118,6 +121,7 @@ def build():
         # 画面高に追従するフォント指定（例: "2.4vh"）
         base_font_css="{}vh".format(dcfg.get("base_font_vh", 2.4)),
         page_seconds=page_seconds,  # ページ毎の表示秒（文字量から算出）
+        reload_minutes=dcfg.get("reload_minutes", 360),  # 自動リロード間隔（分）
         aspect_ratio=aspect_ratio,
         grid_columns=grid_columns,
         updated_at=updated_at,
